@@ -1,5 +1,13 @@
 package com.sya.config;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.PropertyAccessor;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.sya.code.CacheMessageListener;
 import com.sya.code.ClusterCacheManager;
 import lombok.extern.slf4j.Slf4j;
@@ -51,13 +59,24 @@ public class ClusterCacheAutoConfiguration {
         RedisTemplate<Object, Object> redisTemplate = new RedisTemplate<>();
         redisTemplate.setConnectionFactory(redisConnectionFactory);
         // 使用 Jackson2JsonRedisSerializer 替换默认序列化
-        Jackson2JsonRedisSerializer genericFastJsonRedisSerializer = new Jackson2JsonRedisSerializer(Object.class);
+        Jackson2JsonRedisSerializer<Object> jackson2JsonRedisSerializer =
+                new Jackson2JsonRedisSerializer<>(Object.class);
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY);
+        objectMapper.configure(MapperFeature.USE_ANNOTATIONS, false);
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        objectMapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+        // 此项必须配置，否则会报java.lang.ClassCastException: java.util.LinkedHashMap cannot be cast to XXX
+        objectMapper.enableDefaultTyping(ObjectMapper.DefaultTyping.NON_FINAL, JsonTypeInfo.As.PROPERTY);
+        objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+        jackson2JsonRedisSerializer.setObjectMapper(objectMapper);
+
         // 设置key和value的序列化规则
         redisTemplate.setKeySerializer(new GenericToStringSerializer<>(Object.class));
-        redisTemplate.setValueSerializer(genericFastJsonRedisSerializer);
+        redisTemplate.setValueSerializer(jackson2JsonRedisSerializer);
         // 设置hashKey和hashValue的序列化规则
         redisTemplate.setHashKeySerializer(new GenericToStringSerializer<>(Object.class));
-        redisTemplate.setHashValueSerializer(genericFastJsonRedisSerializer);
+        redisTemplate.setHashValueSerializer(jackson2JsonRedisSerializer);
         // 设置支持事物
         redisTemplate.setEnableTransactionSupport(true);
         redisTemplate.afterPropertiesSet();

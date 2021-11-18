@@ -43,7 +43,7 @@ public class CacheMessageListener implements MessageListener {
 	@Override
 	public void onMessage(Message message, byte[] pattern) {
 
-		logger.debug("收到redis清除缓存消息, 开始清除本地缓存,   {}", message);
+		logger.info("收到redis清除缓存消息, 开始清除本地缓存,   {}", message);
 		CacheMessage cacheMessage = JSON.parseObject(message.toString(), CacheMessage.class);
 		clusterCacheManager.clearLocal(cacheMessage.getCacheName(), cacheMessage.getKey());
 	}

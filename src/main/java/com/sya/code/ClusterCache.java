@@ -154,7 +154,7 @@ public class ClusterCache extends AbstractValueAdaptingCache {
             return;
         }
         long expire = getExpire();
-        logger.debug("put：{},expire:{}", getKey(key), expire);
+        logger.info("put：{},expire:{}", getKey(key), expire);
         redisTemplate.opsForValue().set(getKey(key), toStoreValue(value), expire, TimeUnit.SECONDS);
 
         //缓存变更时通知其他节点清理本地缓存
@@ -223,14 +223,14 @@ public class ClusterCache extends AbstractValueAdaptingCache {
         if (this.caffeineEnable) {
             value = caffeineCache.getIfPresent(key);
             if (value != null) {
-                logger.debug("从本地缓存中获得key, the key is : {}", cacheKey);
+                logger.info("从本地缓存中获得key, the key is : {}", cacheKey);
                 return value;
             }
         }
         value = redisTemplate.opsForValue().get(cacheKey);
         if (this.caffeineEnable) {
             if (value != null) {
-                logger.debug("从redis中获得值，将值放到本地缓存中, the key is : {}", cacheKey);
+                logger.info("从redis中获得值，将值放到本地缓存中, the key is : {}", cacheKey);
 
                 caffeineCache.put(key, value);
             }
@@ -243,7 +243,7 @@ public class ClusterCache extends AbstractValueAdaptingCache {
      * @description 清理本地缓存
      */
     public void clearLocal(Object key) {
-        logger.debug("clear local cache, the key is : {}", key);
+        logger.info("clear local cache, the key is : {}", key);
         if (!this.caffeineEnable) {
             return;
         }
