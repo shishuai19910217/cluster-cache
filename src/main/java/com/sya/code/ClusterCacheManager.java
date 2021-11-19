@@ -1,6 +1,7 @@
 package com.sya.code;
 
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.stats.CacheStats;
 import com.sya.config.ClusterCacheProperties;
@@ -11,6 +12,7 @@ import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -69,6 +71,7 @@ public class ClusterCacheManager implements CacheManager {
 
 
 	private void clearCacheMap() {
+		String cachePrefix = this.clusterCacheProperties.getCachePrefix();
 		int size = cacheMap.size();
 		if (size> cacheInstanceNum) {
 			int deleteNum =	size - cacheInstanceNum;
@@ -85,7 +88,12 @@ public class ClusterCacheManager implements CacheManager {
 
 				ClusterCache clusterCache = list.get(i);
 				logger.info("需要清除的缓存实例第{}个--{}",i+1,clusterCache.getName());
+
 				cacheMap.remove(clusterCache.getName());
+				String keyStr = clusterCache.getName();
+				String redisKey = StringUtils.isEmpty(cachePrefix) ? keyStr : cachePrefix.concat(":").concat(keyStr);
+				Set<Object> keys = stringKeyRedisTemplate.keys(redisKey + ":*");
+				stringKeyRedisTemplate.delete(keys);
 				clusterCache.clearLocal(null);
 			}
 
@@ -106,17 +114,28 @@ public class ClusterCacheManager implements CacheManager {
 	 * result:{"缓存名称":统计信息}
 	 * @return
 	 */
-	public static Map<String, String> getCacheStats() {
+	public static Map<String, Map> getCacheStats() {
 		if (CollectionUtils.isEmpty(cacheMap)) {
 			return null;
 		}
 
-		Map<String, String> result = new LinkedHashMap<>();
+		Map<String, Map> result = new LinkedHashMap<>();
 		for (Cache cache : cacheMap.values()) {
-			ClusterCache caffeineCache = (ClusterCache) cache;
-			CacheStats stats = caffeineCache.getCaffeineCache().stats();
+			ClusterCache clusterCache = (ClusterCache) cache;
+			com.github.benmanes.caffeine.cache.Cache<Object, Object> caffeineCache = clusterCache.getCaffeineCache();
+			Set<Object> objects = caffeineCache.asMap().keySet();
+			CacheStats stats = caffeineCache.stats();
+			Map map = new HashMap();
+			map.put("hitCount",stats.hitCount());
+			map.put("evictionWeight",stats.evictionWeight());
+			map.put("evictionCount",stats.evictionCount());
+			map.put("totalLoadTime",stats.totalLoadTime());
+			map.put("loadFailureCount",stats.loadFailureCount());
+			map.put("missCount",stats.missCount());
+			map.put("loadSuccessCount",stats.loadSuccessCount());
 
-			result.put(caffeineCache.getName(), JSON.toJSONString(stats));
+			map.put("keys",objects);
+			result.put(clusterCache.getName(), map);
 		}
 		return result;
 	}

@@ -120,6 +120,7 @@ public class ClusterCache extends AbstractValueAdaptingCache {
         return this;
     }
     /**
+     *
      * @Author shishuai
      * @Date 2021/11/18
      * @description
@@ -157,6 +158,15 @@ public class ClusterCache extends AbstractValueAdaptingCache {
         }
     }
 
+    /**
+     * 不会往caffeine中放 只有在调用get方法时才会向caffeine中放
+     * @Author shishuai
+     * @Date 2021/11/19
+     * @description
+     * @param key
+     * @param value
+     * @return
+     */
     @Override
     public void put(Object key, Object value) {
         if (!super.isAllowNullValues() && value == null) {
