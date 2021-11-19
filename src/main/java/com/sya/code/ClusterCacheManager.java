@@ -1,5 +1,6 @@
 package com.sya.code;
 
+import com.alibaba.fastjson.JSON;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.stats.CacheStats;
 import com.sya.config.ClusterCacheProperties;
@@ -105,15 +106,17 @@ public class ClusterCacheManager implements CacheManager {
 	 * result:{"缓存名称":统计信息}
 	 * @return
 	 */
-	public static Map<String, CacheStats> getCacheStats() {
+	public static Map<String, String> getCacheStats() {
 		if (CollectionUtils.isEmpty(cacheMap)) {
 			return null;
 		}
 
-		Map<String, CacheStats> result = new LinkedHashMap<>();
+		Map<String, String> result = new LinkedHashMap<>();
 		for (Cache cache : cacheMap.values()) {
 			ClusterCache caffeineCache = (ClusterCache) cache;
-			result.put(caffeineCache.getName(), caffeineCache.getCaffeineCache().stats());
+			CacheStats stats = caffeineCache.getCaffeineCache().stats();
+
+			result.put(caffeineCache.getName(), JSON.toJSONString(stats));
 		}
 		return result;
 	}
@@ -176,6 +179,7 @@ public class ClusterCacheManager implements CacheManager {
 			return null;
 		}
 		Caffeine<Object, Object> cacheBuilder = Caffeine.newBuilder();
+
 		ClusterCacheProperties.CacheDefault cacheConfig;
 		switch (name) {
 			case CacheNames.CACHE_15MINS:
