@@ -62,6 +62,11 @@ public class ClusterCacheProperties {
 
 	}
 
+	/****
+	 * 对每个caffeine cache实例的限制
+	 * 就是对ClusterCache中 Cache<Object, Object> caffeineCache（相当于map） 的限制
+	 * 作用域是 当前ClusterCache中的caffeineCache中每个键值对
+	 */
 	@Data
 	public class CacheDefault {
 		/** 访问后过期时间，单位秒*/
@@ -72,7 +77,7 @@ public class ClusterCacheProperties {
 		protected long refreshAfterWrite;
 		/** 初始化大小,默认50*/
 		protected int initialCapacity = 50;
-		/** 最大缓存对象个数*/
+		/** 最大缓存对象key-value 个数*/
 		protected long maximumSize = 50;
 		
 		/** 由于权重需要缓存对象来提供，对于使用spring cache这种场景不是很适合，所以暂不支持配置*/

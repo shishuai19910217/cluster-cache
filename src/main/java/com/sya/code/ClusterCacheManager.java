@@ -79,7 +79,7 @@ public class ClusterCacheManager implements CacheManager {
 				list.add(cache);
 			}
 			// 升序
-			Collections.sort(list,(o1,o2)->{return o2.getTimestamp().compareTo(o1.getTimestamp()); });
+			Collections.sort(list,(o1,o2)->{return o1.getTimestamp().compareTo(o2.getTimestamp()); });
 			for (int i=0;i<deleteNum;i++) {
 
 				ClusterCache clusterCache = list.get(i);
