@@ -10,7 +10,6 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.util.StringUtils;
 
 import java.time.Duration;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -18,6 +17,11 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 /**
+ *
+ * 缓存前缀+ClusterCache.name+ 具体的cache的key  就是redis key
+ * 具体的cache的key 本质上就是ClusterCache的key 就是 @CachePut(value = {"test1"},key = "#param.get(\"key\")") 中的 key
+ * test1 就是  ClusterCache实例的名字 也是  ClusterCacheManager中cacheMap的key
+ *
  * @author     ：shishuai
  * @date       ：Created in 2021/11/17 14:54
  * @description：自定义 cache 兼容2级缓存
@@ -28,7 +32,10 @@ public class ClusterCache extends AbstractValueAdaptingCache {
 
     private final Logger logger = LoggerFactory.getLogger(ClusterCache.class);
     /**
-     * 缓存的名称 而不是 cache 中的key
+     * 缓存的名称 而不是 具体 cache中的key
+     * 不包含 cache.cluster.achePrefix的值
+     * 例如 @CacheConfig(cacheNames = "namestr", cacheManager = "L2CacheManager") “namestr”就是整个name
+     *
      */
     private String name;
     /**
@@ -36,6 +43,10 @@ public class ClusterCache extends AbstractValueAdaptingCache {
      */
     private RedisTemplate<Object, Object> redisTemplate;
 
+    /***
+     * 注意这不是 spring 的cache  是com.github.benmanes.caffeine.cache.Cache
+     * 借助 caffeine 实现1级缓存 key就是 这个缓存的key
+     */
     @Getter
     private Cache<Object, Object> caffeineCache;
 
@@ -65,9 +76,8 @@ public class ClusterCache extends AbstractValueAdaptingCache {
      * 默认key超时时间 3600s
      */
     private long defaultExpiration = 3600;
-    /**
-     * 本地 1级缓存 默认过期时间
-     */
+
+    // 缓存 默认过期时间
     private Map<String, Long> defaultExpires = new HashMap<>();
     {
         defaultExpires.put(CacheNames.CACHE_15MINS, TimeUnit.MINUTES.toSeconds(15));
@@ -113,7 +123,7 @@ public class ClusterCache extends AbstractValueAdaptingCache {
      * @Author shishuai
      * @Date 2021/11/18
      * @description
-     * @param key   cache中的key
+     * @param key    key 具体 cache中的key
      * @param valueLoader
      * @return {@link T}
      */
@@ -239,7 +249,9 @@ public class ClusterCache extends AbstractValueAdaptingCache {
         return value;
     }
 
+
     /**
+     * key 具体 cache中的key
      * @description 清理本地缓存
      */
     public void clearLocal(Object key) {
@@ -261,7 +273,7 @@ public class ClusterCache extends AbstractValueAdaptingCache {
      * @Author shishuai
      * @Date 2021/11/17
      * @description
-     * @param key
+     * @param key 具体 cache中的key
      * @return {@link Object}
      */
     private Object getKey(Object key) {

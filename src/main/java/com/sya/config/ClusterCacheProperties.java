@@ -27,12 +27,21 @@ public class ClusterCacheProperties {
 	 * 是否启用 1级缓存
 	 */
 	private boolean caffeineEnable = true;
-
+	/***
+	 * 缓存的实例个数限制 就是有多少个ClusterCache
+	 */
 	private int cacheInstanceNum = 1000;
-
+	/***
+	 * 对于redis 缓存的一些限制
+	 */
 	private Redis redis = new Redis();
-	
+	/***
+	 * 只是针对 caffeine 缓存的一些限制  对redis没有用
+	 */
 	private CacheDefault cacheDefault = new CacheDefault();
+	/***
+	 * 为了方便一些共用全局的过期配置 对redis  caffeine都有用
+	 */
 	private Cache15m cache15m = new Cache15m();
 	private Cache30m cache30m = new Cache30m();
 	private Cache60m cache60m = new Cache60m();

@@ -16,6 +16,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 /**
+ *
+ * 实现缓存的 总入口  也是 ClusterCache的上下文 容器
  * @author     ：shishuai
  * @date       ：Created in 2021/11/17 14:54
  * @description：自定义CacheManager 兼容2级缓存
@@ -27,7 +29,8 @@ public class ClusterCacheManager implements CacheManager {
 	
 	private final Logger logger = LoggerFactory.getLogger(ClusterCacheManager.class);
 	/***
-	 * ClusterCache 的集合   ClusterCache包含caffeine和redis 客户端
+	 * ClusterCache 的集合   ClusterCache包含caffeine 和redis 客户端
+	 * 真正存储的位置
 	 */
 	private static ConcurrentMap<String, Cache> cacheMap = new ConcurrentHashMap<String, Cache>();
 	
