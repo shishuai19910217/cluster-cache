@@ -69,11 +69,18 @@ public class ClusterCacheManager implements CacheManager {
 
 	}
 
-
+	/**
+	 *  确保 cacheMap size 不会无限的增加
+	 * @Author shishuai
+	 * @Date 2021/11/19
+	 * @description
+	 * @param
+	 * @return
+	 */
 	private void clearCacheMap() {
 		String cachePrefix = this.clusterCacheProperties.getCachePrefix();
 		int size = cacheMap.size();
-		if (size> cacheInstanceNum) {
+		if (size > cacheInstanceNum) {
 			int deleteNum =	size - cacheInstanceNum;
 			logger.info("需要清除的缓存实例有{}个",deleteNum);
 			Set<String> keySet = cacheMap.keySet();
@@ -91,6 +98,7 @@ public class ClusterCacheManager implements CacheManager {
 
 				cacheMap.remove(clusterCache.getName());
 				String keyStr = clusterCache.getName();
+				// 以下可能存在性能问题  误解 redistemplate  不支持批量删除
 				String redisKey = StringUtils.isEmpty(cachePrefix) ? keyStr : cachePrefix.concat(":").concat(keyStr);
 				Set<Object> keys = stringKeyRedisTemplate.keys(redisKey + ":*");
 				stringKeyRedisTemplate.delete(keys);
