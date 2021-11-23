@@ -23,10 +23,6 @@ public class CacheMessageListener implements MessageListener {
 	
 	private ClusterCacheManager clusterCacheManager;
 
-	{
-		//打开json autotype功能
-		ParserConfig.getGlobalInstance().addAccept("com.axin.idea.rediscaffeinecachestarter.support.");
-	}
 
 	public CacheMessageListener(RedisTemplate<String, Object> redisTemplate,
                                 ClusterCacheManager clusterCacheManager) {

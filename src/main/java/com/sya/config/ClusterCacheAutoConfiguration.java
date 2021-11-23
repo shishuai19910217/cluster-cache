@@ -64,12 +64,9 @@ public class ClusterCacheAutoConfiguration {
         //key序列化方式
         redisTemplate.setKeySerializer(redisSerializer);
         redisTemplate.setValueSerializer(jackson2JsonRedisSerializer());
-        /****
-         * todo  我擦 value 序列化 现在是使用的默认jdk的 可读性不高 带有\xac\xed\x00\x05sr\x00\x1acn.usr.entity.。。。
-         * 等待后来者完善吧
-         *
-         */
-
+        redisTemplate.setHashKeySerializer(redisSerializer);
+        redisTemplate.setHashValueSerializer(jackson2JsonRedisSerializer());
+        redisTemplate.afterPropertiesSet();
 
         return redisTemplate;
 

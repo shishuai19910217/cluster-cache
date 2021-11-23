@@ -317,6 +317,7 @@ public class ClusterCache extends AbstractValueAdaptingCache {
      */
     private void push(CacheMessage message) {
         if (this.caffeineEnable) {
+            logger.info("----开始发送缓存变更时通知其他节点清理本地缓存---{}--{}",message.getCacheName(),message.getKey());
             redisTemplate.convertAndSend(topic, message);
         }
 
