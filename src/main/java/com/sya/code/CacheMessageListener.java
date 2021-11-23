@@ -19,7 +19,7 @@ public class CacheMessageListener implements MessageListener {
 	
 	private final Logger logger = LoggerFactory.getLogger(CacheMessageListener.class);
 
-	private RedisTemplate<Object, Object> redisTemplate;
+	private RedisTemplate<String, Object> redisTemplate;
 	
 	private ClusterCacheManager clusterCacheManager;
 
@@ -28,7 +28,7 @@ public class CacheMessageListener implements MessageListener {
 		ParserConfig.getGlobalInstance().addAccept("com.axin.idea.rediscaffeinecachestarter.support.");
 	}
 
-	public CacheMessageListener(RedisTemplate<Object, Object> redisTemplate,
+	public CacheMessageListener(RedisTemplate<String, Object> redisTemplate,
                                 ClusterCacheManager clusterCacheManager) {
 		this.redisTemplate = redisTemplate;
 		this.clusterCacheManager = clusterCacheManager;

@@ -39,7 +39,7 @@ public class ClusterCacheManager implements CacheManager {
 	
 	private ClusterCacheProperties clusterCacheProperties;
 	
-	private RedisTemplate<Object, Object> stringKeyRedisTemplate;
+	private RedisTemplate<String, Object> stringKeyRedisTemplate;
 
 	private boolean dynamic = true;
 
@@ -59,7 +59,7 @@ public class ClusterCacheManager implements CacheManager {
 		cacheNames.add(CacheNames.CACHE_12HOUR);
 	}
 	public ClusterCacheManager(ClusterCacheProperties clusterCacheProperties,
-							   RedisTemplate<Object, Object> stringKeyRedisTemplate) {
+							   RedisTemplate<String, Object> stringKeyRedisTemplate) {
 		super();
 		this.clusterCacheProperties = clusterCacheProperties;
 		this.stringKeyRedisTemplate = stringKeyRedisTemplate;
@@ -100,7 +100,7 @@ public class ClusterCacheManager implements CacheManager {
 				String keyStr = clusterCache.getName();
 				// 以下可能存在性能问题  误解 redistemplate  不支持批量删除
 				String redisKey = StringUtils.isEmpty(cachePrefix) ? keyStr : cachePrefix.concat(":").concat(keyStr);
-				Set<Object> keys = stringKeyRedisTemplate.keys(redisKey + ":*");
+				Set<String> keys = stringKeyRedisTemplate.keys(redisKey + ":*");
 				stringKeyRedisTemplate.delete(keys);
 				clusterCache.clearLocal(null);
 			}

@@ -1,5 +1,6 @@
 package com.sya.config;
 
+import com.alibaba.fastjson.support.spring.GenericFastJsonRedisSerializer;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
@@ -26,8 +27,7 @@ import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.listener.ChannelTopic;
 import org.springframework.data.redis.listener.RedisMessageListenerContainer;
-import org.springframework.data.redis.serializer.GenericToStringSerializer;
-import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
+import org.springframework.data.redis.serializer.*;
 
 import java.net.UnknownHostException;
 
@@ -54,39 +54,27 @@ public class ClusterCacheAutoConfiguration {
 
     @Bean("cacheRedisTemplate")
     @ConditionalOnMissingBean(name = "cacheRedisTemplate")
-    public RedisTemplate<Object, Object> redisTemplate(RedisConnectionFactory redisConnectionFactory)
+    public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory redisConnectionFactory)
             throws UnknownHostException {
-        RedisTemplate<Object, Object> redisTemplate = new RedisTemplate<>();
+        RedisTemplate<String, Object> redisTemplate = new RedisTemplate<>();
+        RedisSerializer<String> redisSerializer = new StringRedisSerializer();
         redisTemplate.setConnectionFactory(redisConnectionFactory);
-        // 使用 Jackson2JsonRedisSerializer 替换默认序列化
-        Jackson2JsonRedisSerializer<Object> jackson2JsonRedisSerializer =
-                new Jackson2JsonRedisSerializer<>(Object.class);
-        ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY);
-        objectMapper.configure(MapperFeature.USE_ANNOTATIONS, false);
-        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        objectMapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
-        // 此项必须配置，否则会报java.lang.ClassCastException: java.util.LinkedHashMap cannot be cast to XXX
-        objectMapper.enableDefaultTyping(ObjectMapper.DefaultTyping.NON_FINAL, JsonTypeInfo.As.PROPERTY);
-        objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-        jackson2JsonRedisSerializer.setObjectMapper(objectMapper);
+        //key序列化方式
+        redisTemplate.setKeySerializer(redisSerializer);
+        /****
+         * todo  我擦 value 序列化 现在是使用的默认jdk的 可读性不高 带有\xac\xed\x00\x05sr\x00\x1acn.usr.entity.。。。
+         * 等待后来者完善吧
+         *
+         */
 
-        // 设置key和value的序列化规则
-        redisTemplate.setKeySerializer(new GenericToStringSerializer<>(Object.class));
-        redisTemplate.setValueSerializer(jackson2JsonRedisSerializer);
-        // 设置hashKey和hashValue的序列化规则
-        redisTemplate.setHashKeySerializer(new GenericToStringSerializer<>(Object.class));
-        redisTemplate.setHashValueSerializer(jackson2JsonRedisSerializer);
-        // 设置支持事物
-        redisTemplate.setEnableTransactionSupport(true);
-        redisTemplate.afterPropertiesSet();
+
         return redisTemplate;
 
     }
 
     @Bean("L2CacheManager")
     @ConditionalOnBean(name = "cacheRedisTemplate")
-    public CacheManager cacheManager(@Qualifier("cacheRedisTemplate") RedisTemplate<Object, Object> redisTemplate) {
+    public CacheManager cacheManager(@Qualifier("cacheRedisTemplate") RedisTemplate<String, Object> redisTemplate) {
         return new ClusterCacheManager(clusterCacheProperties, redisTemplate);
     }
 
@@ -98,7 +86,7 @@ public class ClusterCacheAutoConfiguration {
             havingValue = "true",
             matchIfMissing = true
     )
-    public RedisMessageListenerContainer redisMessageListenerContainer(@Qualifier("cacheRedisTemplate") RedisTemplate<Object, Object> stringRedisTemplate,
+    public RedisMessageListenerContainer redisMessageListenerContainer(@Qualifier("cacheRedisTemplate") RedisTemplate<String, Object> stringRedisTemplate,
                                                                        ClusterCacheManager clusterCacheManager) {
         RedisMessageListenerContainer redisMessageListenerContainer = new RedisMessageListenerContainer();
         redisMessageListenerContainer.setConnectionFactory(stringRedisTemplate.getConnectionFactory());

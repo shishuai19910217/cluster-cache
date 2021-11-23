@@ -1,5 +1,8 @@
 package com.sya.code;
 
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.sya.config.ClusterCacheProperties;
 import lombok.Getter;
@@ -41,7 +44,7 @@ public class ClusterCache extends AbstractValueAdaptingCache {
     /**
      * 主要操作2级redis 缓存
      */
-    private RedisTemplate<Object, Object> redisTemplate;
+    private RedisTemplate<String, Object> redisTemplate;
 
     /***
      * 注意这不是 spring 的cache  是com.github.benmanes.caffeine.cache.Cache
@@ -96,7 +99,7 @@ public class ClusterCache extends AbstractValueAdaptingCache {
         super(allowNullValues);
     }
 
-    public ClusterCache(String name, RedisTemplate<Object, Object> redisTemplate,
+    public ClusterCache(String name, RedisTemplate<String, Object> redisTemplate,
                         Cache<Object, Object> caffeineCache, ClusterCacheProperties clusterCacheProperties) {
         super(clusterCacheProperties.isCacheNullValues());
         this.name = name;
@@ -220,8 +223,8 @@ public class ClusterCache extends AbstractValueAdaptingCache {
     @Override
     public void clear() {
         // 先清除redis中缓存数据，然后清除caffeine中的缓存，避免短时间内如果先清除caffeine缓存后其他请求会再从redis里加载到caffeine中
-        Set<Object> keys = redisTemplate.keys(this.name.concat(":*"));
-        for (Object key : keys) {
+        Set<String> keys = redisTemplate.keys(this.name.concat(":*"));
+        for (String key : keys) {
             redisTemplate.delete(key);
         }
         if (this.caffeineEnable) {
@@ -249,10 +252,22 @@ public class ClusterCache extends AbstractValueAdaptingCache {
         }
         value = redisTemplate.opsForValue().get(cacheKey);
         if (this.caffeineEnable) {
-            if (value != null) {
-                logger.info("从redis中获得值，将值放到本地缓存中, the key is : {}", cacheKey);
+            if (value != null ) {
+                if (value instanceof JSONObject) {
+                    if (((JSONObject) value).size()>0){
+                        logger.info("从redis中获得值，将值放到本地缓存中, the key is : {}", cacheKey);
+                        caffeineCache.put(key, value);
+                    }
+                }else if (value instanceof JSONArray) {
+                    if (((JSONArray) value).size()>0){
+                        logger.info("从redis中获得值，将值放到本地缓存中, the key is : {}", cacheKey);
+                        caffeineCache.put(key, value);
+                    }
+                }else {
+                    logger.info("从redis中获得值，将值放到本地缓存中, the key is : {}", cacheKey);
+                    caffeineCache.put(key, value);
+                }
 
-                caffeineCache.put(key, value);
             }
         }
 
@@ -286,7 +301,7 @@ public class ClusterCache extends AbstractValueAdaptingCache {
      * @param key 具体 cache中的key
      * @return {@link Object}
      */
-    private Object getKey(Object key) {
+    private String getKey(Object key) {
         String keyStr = this.name.concat(":").concat(key.toString());
         return StringUtils.isEmpty(this.cachePrefix) ? keyStr : this.cachePrefix.concat(":").concat(keyStr);
     }
