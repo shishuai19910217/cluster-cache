@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.jsontype.impl.LaissezFaireSubTypeValidator;
 import com.sya.code.CacheMessageListener;
 import com.sya.code.ClusterCacheManager;
 import lombok.extern.slf4j.Slf4j;
@@ -30,6 +31,7 @@ import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 import org.springframework.data.redis.serializer.*;
 
 import java.net.UnknownHostException;
+import java.text.SimpleDateFormat;
 
 /**
  * @author     ：shishuai
@@ -61,6 +63,7 @@ public class ClusterCacheAutoConfiguration {
         redisTemplate.setConnectionFactory(redisConnectionFactory);
         //key序列化方式
         redisTemplate.setKeySerializer(redisSerializer);
+        redisTemplate.setValueSerializer(jackson2JsonRedisSerializer());
         /****
          * todo  我擦 value 序列化 现在是使用的默认jdk的 可读性不高 带有\xac\xed\x00\x05sr\x00\x1acn.usr.entity.。。。
          * 等待后来者完善吧
@@ -71,7 +74,23 @@ public class ClusterCacheAutoConfiguration {
         return redisTemplate;
 
     }
+    private Jackson2JsonRedisSerializer<Object> jackson2JsonRedisSerializer() {
+        Jackson2JsonRedisSerializer<Object> jackson2JsonRedisSerializer =
+                new Jackson2JsonRedisSerializer<>(Object.class);
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY);
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        objectMapper.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
+        objectMapper.configure(DeserializationFeature.FAIL_ON_INVALID_SUBTYPE,false);
+        objectMapper.configure(DeserializationFeature.FAIL_ON_MISSING_EXTERNAL_TYPE_ID_PROPERTY,false);
+        objectMapper.setDateFormat(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss"));
+        objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        objectMapper.enableDefaultTyping(ObjectMapper.DefaultTyping.NON_FINAL, JsonTypeInfo.As.PROPERTY);
 
+
+        jackson2JsonRedisSerializer.setObjectMapper(objectMapper);
+        return jackson2JsonRedisSerializer;
+    }
     @Bean("L2CacheManager")
     @ConditionalOnBean(name = "cacheRedisTemplate")
     public CacheManager cacheManager(@Qualifier("cacheRedisTemplate") RedisTemplate<String, Object> redisTemplate) {
