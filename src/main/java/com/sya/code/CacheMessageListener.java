@@ -8,6 +8,8 @@ import org.springframework.data.redis.connection.Message;
 import org.springframework.data.redis.connection.MessageListener;
 import org.springframework.data.redis.core.RedisTemplate;
 
+import java.nio.charset.StandardCharsets;
+
 /**
  * @author     ：shishuai
  * @date       ：Created in 2021/11/17 14:54
@@ -38,9 +40,17 @@ public class CacheMessageListener implements MessageListener {
 	 */
 	@Override
 	public void onMessage(Message message, byte[] pattern) {
-
 		logger.info("收到redis清除缓存消息, 开始清除本地缓存,   {}", message);
 		CacheMessage cacheMessage = JSON.parseObject(message.toString(), CacheMessage.class);
 		clusterCacheManager.clearLocal(cacheMessage.getCacheName(), cacheMessage.getKey());
+		/***
+		 * 以下这种方式 规避乱码
+		 */
+//		String  body = new String(message.getBody(), StandardCharsets.UTF_8);
+//		String[] split = body.split(";");
+//		String cacheName = split[0];
+//		String key = split[1];
+//		clusterCacheManager.clearLocal(cacheName, key);
+
 	}
 }

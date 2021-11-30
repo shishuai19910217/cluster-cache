@@ -12,6 +12,7 @@ import org.springframework.cache.support.AbstractValueAdaptingCache;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.util.StringUtils;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
@@ -319,6 +320,13 @@ public class ClusterCache extends AbstractValueAdaptingCache {
         if (this.caffeineEnable) {
             logger.info("----开始发送缓存变更时通知其他节点清理本地缓存---{}--{}",message.getCacheName(),message.getKey());
             redisTemplate.convertAndSend(topic, message);
+            /***
+             * 以下是字节方式  可以规避乱码
+             */
+//            byte[] bytes = topic.getBytes(StandardCharsets.UTF_8);
+//            byte[] msg = (message.getCacheName()+";"+message.getKey().toString()).getBytes(StandardCharsets.UTF_8);
+//
+//            redisTemplate.getConnectionFactory().getConnection().publish(bytes,msg);
         }
 
     }
